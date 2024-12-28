@@ -1,10 +1,12 @@
 from .models import Word, WordUsage
 
 class DataIngestor:
-
-    def __init__(self, words_collection, usage_collection):
-        self.words_collection = words_collection
-        self.usage_collection = usage_collection
+    def __init__(self, connection_manager):
+        """
+        Inicializa el DataIngestor con un administrador de conexión.
+        """
+        self.words_collection = connection_manager.get_or_create_collection("words")
+        self.usage_collection = connection_manager.get_or_create_collection("word_usage")
 
     def insert_word(self, word):
         """
@@ -29,14 +31,12 @@ class DataIngestor:
 
         Args:
             processed_words (list): Lista de palabras procesadas con su información.
-            words_collection (Collection): Colección de palabras únicas (words).
-            usage_collection (Collection): Colección de usos de palabras (word_usage).
         """
         for entry in processed_words:
             # Crear objeto Word
             word_obj = Word(entry["word"], entry["length"])
             # Insertar palabra única o recuperar su ID
-            word_id = self.insert_word(self.words_collection, word_obj)
+            word_id = self.insert_word(word_obj)
 
             # Crear objeto WordUsage
             usage_obj = WordUsage(
@@ -46,5 +46,4 @@ class DataIngestor:
                 frequency=entry["frequency"]
             )
             # Insertar el uso de la palabra
-            self.insert_word_usage(self.usage_collection, usage_obj)
-
+            self.insert_word_usage(usage_obj)

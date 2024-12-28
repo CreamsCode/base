@@ -5,8 +5,14 @@ services:
     container_name: mongodb
     ports:
       - "27017:27017"
-    volumes:
-      - ./data/db:/data/db
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - mongo:/data/db
+      - configdb:/data/configdb  # Aseguramos persistencia para /data/configdb
+volumes:
+  mongo:
+    driver: local
+  configdb:
+    driver: local

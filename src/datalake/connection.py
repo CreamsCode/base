@@ -1,5 +1,4 @@
 from pymongo import MongoClient
-from pymongo.collection import Collection
 
 class MongoDBConnectionManager:
     def __init__(self, uri: str = "mongodb://localhost:27017/", db_name: str = "word_analysis"):
@@ -16,12 +15,18 @@ class MongoDBConnectionManager:
         self.db = self.client[self.db_name]
         print(f"Connected to MongoDB at {self.uri}")
 
-    def get_collection(self, collection_name: str) -> Collection:
+    def get_or_create_collection(self, collection_name: str):
         """
-        Retorna una colección específica dentro de la base de datos.
+        Verifica si una colección existe; si no, la crea y la retorna.
         """
-        if not self.db:
+        if self.db is None:  # Compara explícitamente con None
             raise Exception("Database connection not initialized. Call connect() first.")
+
+        # Verificar si la colección existe
+        if collection_name not in self.db.list_collection_names():
+            print(f"Collection '{collection_name}' does not exist. Creating it...")
+            self.db.create_collection(collection_name)  # Crea la colección si no existe
+
         return self.db[collection_name]
 
     def close(self):
