@@ -11,6 +11,13 @@ services:
     volumes:
       - mongo:/data/db
       - configdb:/data/configdb  # Aseguramos persistencia para /data/configdb
+  hazelcast:
+    image: hazelcast/hazelcast:5.3
+    container_name: hazelcast
+    ports:
+      - "5701:5701"
+    environment:
+      HZ_CLUSTERNAME: dev  # Nombre del clúster Hazelcast
 volumes:
   mongo:
     driver: local
