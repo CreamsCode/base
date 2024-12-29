@@ -22,4 +22,3 @@ class Neo4JConnection:
         """Ejecuta una consulta Cypher en Neo4J."""
         with self.driver.session() as session:
             return session.run(cypher_query, parameters).data()
-

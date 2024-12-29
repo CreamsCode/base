@@ -1,19 +1,26 @@
 class DataParser:
     @staticmethod
-    def parse_word(doc):
-        """Transforma un documento de palabra de MongoDB para ser compatible con Neo4J."""
+    def parse_word(word,data):
+        """
+        Transforma un elemento del mapa de palabras de Hazelcast para Neo4J.
+        :param data: Diccionario con datos de la palabra
+        :return: Diccionario transformado
+        """
         return {
-            "word": doc.get("word", ""),
-            "length": doc.get("length", 0)
+            "word": data.get("word", word),
+            "length": data.get("length", 0)
         }
 
     @staticmethod
-    def parse_word_usage(doc):
-        """Transforma un documento de uso de palabra de MongoDB para ser compatible con Neo4J."""
+    def parse_word_usage(data):
+        """
+        Transforma un elemento del mapa de relaciones de Hazelcast para Neo4J.
+        :param data: Diccionario con datos de la relación
+        :return: Diccionario transformado
+        """
         return {
-            "word_id": doc.get("word_id", ""),
-            "book": doc.get("book", ""),
-            "author": doc.get("author", ""),
-            "frequency": doc.get("frequency", 0)
+            "word_id": data.get("word_id", ""),
+            "book": data.get("book", ""),
+            "author": data.get("author", ""),
+            "frequency": data.get("frequency", 0)
         }
-    
