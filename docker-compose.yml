@@ -18,6 +18,14 @@ services:
       - "5701:5701"
     environment:
       HZ_CLUSTERNAME: dev  # Nombre del clúster Hazelcast
+  neo4j:
+    image: neo4j:5.6
+    container_name: neo4j
+    ports:
+      - "7474:7474"  # Interfaz web
+      - "7687:7687"  # Bolt protocol
+    environment:
+      NEO4J_AUTH: "neo4j/password"  # Usuario y contraseña  
 volumes:
   mongo:
     driver: local
