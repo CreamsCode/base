@@ -27,47 +27,47 @@ class Neo4JLoader:
         self.neo4j_conn.close()
         self.hazelcast_client.shutdown()
 
-    def transfer_words(self):
+    def process_graph_map(self):
         """
-        Transfiere palabras desde Hazelcast a Neo4J.
+        Procesa las claves y listas del `graph_map` de Hazelcast.
+        Asegura que los nodos existen y crea conexiones entre ellos.
         """
-        for word, data in self.words_map.entry_set():
-            parsed_word = DataParser.parse_word(word,data)
+        for key, value in self.graph_map.entry_set():
+            # `key` es el nodo principal
+            # `value` es una lista de nodos relacionados
             with self.neo4j_conn.driver.session() as session:
-                session.execute_write(self.create_word, parsed_word)
+                # Asegurarse de que el nodo principal está creado
+                session.execute_write(self.ensure_node_exists, {"word": key})
 
-    def transfer_word_usage(self):
-        """
-        Transfiere relaciones de uso de palabras desde Hazelcast a Neo4J.
-        """
-        for relationship_key, relationship_data in self.graph_map.entry_set():
-            parsed_usage = DataParser.parse_word_usage(relationship_data)
-            with self.neo4j_conn.driver.session() as session:
-                session.execute_write(self.create_word_usage_relationship, parsed_usage)
+                for related_node in value:
+                    # Asegurarse de que cada nodo relacionado está creado
+                    session.execute_write(self.ensure_node_exists, {"word": related_node})
+
+                    # Crear una relación entre el nodo principal y el nodo relacionado
+                    session.execute_write(self.create_relationship, {"source": key, "target": related_node})
 
     @staticmethod
-    def create_word(tx, doc):
+    def ensure_node_exists(tx, doc):
         """
-        Crea un nodo de palabra en Neo4J, solo si la longitud de la palabra es igual a 3.
+        Crea un nodo si no existe.
         :param tx: Transacción de Neo4J
-        :param doc: Diccionario con los datos de la palabra
-        """
-        if doc["length"] == 3:  # Filtrar solo palabras de longitud 3
-            query = """
-            MERGE (w:Word {word: $word})
-            ON CREATE SET w.length = $length
-            """
-            tx.run(query, word=doc["word"], length=doc["length"])
-
-
-    @staticmethod
-    def create_word_usage_relationship(tx, doc):
-        """
-        Crea relaciones de uso de palabra entre Word y Book en Neo4J.
+        :param doc: Diccionario con los datos del nodo (ej. {"word": "example"})
         """
         query = """
-        MATCH (w:Word {word: $word})
-        MERGE (b:Book {name: $book, author: $author})
-        MERGE (w)-[:USED_IN {frequency: $frequency}]->(b)
+        MERGE (w:Word {word: $word})
         """
-        tx.run(query, word=doc["word_id"], book=doc["book"], author=doc["author"], frequency=doc["frequency"])
+        tx.run(query, word=doc["word"])
+
+    @staticmethod
+    def create_relationship(tx, doc):
+        """
+        Crea una relación entre dos nodos.
+        :param tx: Transacción de Neo4J
+        :param doc: Diccionario con los datos de la relación (ej. {"source": "node1", "target": "node2"})
+        """
+        query = """
+        MATCH (source:Word {word: $source})
+        MATCH (target:Word {word: $target})
+        MERGE (source)-[:RELATED_TO]->(target)
+        """
+        tx.run(query, source=doc["source"], target=doc["target"])

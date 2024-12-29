@@ -26,13 +26,11 @@ class TestGraph:
 
         try:
             # Transferir palabras con longitud de 3 letras desde el Datamart a Neo4J
-            logger.info("Transferring 3-letter words to Neo4J...")
-            for word, data in words_map.entry_set():
-                if data["length"] == 3:  # Filtro de longitud
-                    logger.info(f"Processing word: {word} -> {data}")
-                    neo4j_loader.transfer_words()  # Inserta nodos de palabras
+            logger.info("Transferring words to Neo4J...")
+            
+            neo4j_loader.process_graph_map()
 
-            logger.info("3-letter words successfully transferred to Neo4J.")
+            logger.info("Words successfully transferred to Neo4J.")
 
         except Exception as e:
             logger.error(f"An error occurred during the graph test: {e}")
