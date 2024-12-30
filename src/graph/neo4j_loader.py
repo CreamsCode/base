@@ -29,7 +29,7 @@ class Neo4JLoader:
     def process_graph_map(self):
         """
         Procesa las claves y listas del `graph_map` de Hazelcast.
-        Asegura que los nodos existen y crea conexiones entre ellos, con pesos basados en la distancia Levenshtein.
+        Asegura que los nodos existen y crea conexiones entre ellos, con pesos basados en la frecuencia promedio.
         """
         for key, value in self.graph_map.entry_set():
             with self.neo4j_conn.driver.session() as session:
@@ -38,7 +38,7 @@ class Neo4JLoader:
                 for related_node in value:
                     session.execute_write(self.ensure_node_exists, {"word": related_node})
 
-                    weight = self.calculate_levenshtein_weight(key, related_node)
+                    weight = self.calculate_frequency_weight(key, related_node)
 
                     session.execute_write(self.create_relationship, {"source": key, "target": related_node, "weight": weight})
 
@@ -47,7 +47,7 @@ class Neo4JLoader:
         """
         Crea un nodo si no existe.
         :param tx: Transacción de Neo4J
-        :param doc: Diccionario con los datos del nodo (ej. {"word": "example"})
+        :param doc: Diccionario con los datos del nodo (ej. {"word": "example"}).
         """
         query = """
         MERGE (w:Word {word: $word})
@@ -58,8 +58,8 @@ class Neo4JLoader:
     def create_relationship(tx, doc):
         """
         Crea una relación única entre nodos en Neo4J, asegurándose de que la relación sea no direccional y con peso.
-        :param tx: Transacción de Neo4J
-        :param doc: Diccionario con los datos de la relación (ej. {"source": "word1", "target": "word2", "weight": 0.5})
+        :param tx: Transacción de Neo4J.
+        :param doc: Diccionario con los datos de la relación (ej. {"source": "word1", "target": "word2", "weight": 0.5}).
         """
         source, target = sorted([doc["source"], doc["target"]])
 
@@ -71,13 +71,28 @@ class Neo4JLoader:
         """
         tx.run(query, source=source, target=target, weight=doc["weight"])
 
-    @staticmethod
-    def calculate_levenshtein_weight(word1, word2):
+    def calculate_frequency_weight(self, word1, word2):
         """
-        Calcula el peso basado en la distancia Levenshtein entre dos palabras.
+        Calcula el peso basado en la frecuencia promedio de dos palabras.
         :param word1: Primera palabra.
         :param word2: Segunda palabra.
-        :return: Peso normalizado entre 0 y 1.
+        :return: Peso basado en la frecuencia promedio.
         """
-        distance = levenshtein_distance(word1, word2)
-        return 1 / (1 + distance)
+        freq1 = self.get_word_frequency(word1)
+        freq2 = self.get_word_frequency(word2)
+
+        return (freq1 + freq2) / 2
+
+    def get_word_frequency(self, word):
+        """
+        Obtiene la frecuencia de una palabra desde el mapa `words_map`.
+        :param word: La palabra para la que se obtendrá la frecuencia.
+        :return: Frecuencia total de la palabra en todos los usos, o 0 si no se encuentra.
+        """
+        for key, value in self.words_map.entry_set():
+            if key == word: 
+                if "usages" in value:
+                    return sum([usage.get("frequency", 0) for usage in value.get("usages", [])])
+                else:
+                    return value.get("frequency", 0)  
+        return 0
