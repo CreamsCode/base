@@ -1,3 +1,4 @@
+from Levenshtein import distance as levenshtein_distance
 from src.graph.neo4j_connection import Neo4JConnection
 from hazelcast import HazelcastClient
 from src.graph.data_parser import DataParser
@@ -12,10 +13,8 @@ class Neo4JLoader:
         :param password: Contraseña para autenticar en Neo4J
         :param hazelcast_host: Dirección del cluster de Hazelcast
         """
-        # Conexión a Neo4J
         self.neo4j_conn = Neo4JConnection(uri, user, password)
 
-        # Conexión a Hazelcast
         self.hazelcast_client = HazelcastClient(cluster_members=[hazelcast_host])
         self.words_map = self.hazelcast_client.get_map("words_map").blocking()
         self.graph_map = self.hazelcast_client.get_map("graph_map").blocking()
@@ -30,21 +29,18 @@ class Neo4JLoader:
     def process_graph_map(self):
         """
         Procesa las claves y listas del `graph_map` de Hazelcast.
-        Asegura que los nodos existen y crea conexiones entre ellos.
+        Asegura que los nodos existen y crea conexiones entre ellos, con pesos basados en la distancia Levenshtein.
         """
         for key, value in self.graph_map.entry_set():
-            # `key` es el nodo principal
-            # `value` es una lista de nodos relacionados
             with self.neo4j_conn.driver.session() as session:
-                # Asegurarse de que el nodo principal está creado
                 session.execute_write(self.ensure_node_exists, {"word": key})
 
                 for related_node in value:
-                    # Asegurarse de que cada nodo relacionado está creado
                     session.execute_write(self.ensure_node_exists, {"word": related_node})
 
-                    # Crear una relación entre el nodo principal y el nodo relacionado
-                    session.execute_write(self.create_relationship, {"source": key, "target": related_node})
+                    weight = self.calculate_levenshtein_weight(key, related_node)
+
+                    session.execute_write(self.create_relationship, {"source": key, "target": related_node, "weight": weight})
 
     @staticmethod
     def ensure_node_exists(tx, doc):
@@ -61,13 +57,27 @@ class Neo4JLoader:
     @staticmethod
     def create_relationship(tx, doc):
         """
-        Crea una relación entre dos nodos.
+        Crea una relación única entre nodos en Neo4J, asegurándose de que la relación sea no direccional y con peso.
         :param tx: Transacción de Neo4J
-        :param doc: Diccionario con los datos de la relación (ej. {"source": "node1", "target": "node2"})
+        :param doc: Diccionario con los datos de la relación (ej. {"source": "word1", "target": "word2", "weight": 0.5})
         """
+        source, target = sorted([doc["source"], doc["target"]])
+
         query = """
         MATCH (source:Word {word: $source})
         MATCH (target:Word {word: $target})
-        MERGE (source)-[:RELATED_TO]->(target)
+        MERGE (source)-[r:RELATED_TO]->(target)
+        ON CREATE SET r.weight = $weight
         """
-        tx.run(query, source=doc["source"], target=doc["target"])
+        tx.run(query, source=source, target=target, weight=doc["weight"])
+
+    @staticmethod
+    def calculate_levenshtein_weight(word1, word2):
+        """
+        Calcula el peso basado en la distancia Levenshtein entre dos palabras.
+        :param word1: Primera palabra.
+        :param word2: Segunda palabra.
+        :return: Peso normalizado entre 0 y 1.
+        """
+        distance = levenshtein_distance(word1, word2)
+        return 1 / (1 + distance)
