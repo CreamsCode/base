@@ -1,12 +1,13 @@
-from src.collector import Reader, WebScraper
-
+from src.collector import WebScraper
+import json
 
 # Inicializar el scraper para 2 libros
 scraper = WebScraper(number=2)
 
 # Obtener palabras procesadas
-words = scraper.start()
+books_data = scraper.start()
 
-# Mostrar un resumen
-print(f"Total words processed: {len(words)}")
-print(f"Sample data: {words[:5]}")
+# Mostrar el JSON resultante en un formato legible
+print(json.dumps(books_data, indent=4, ensure_ascii=False))
+
+print(books_data)

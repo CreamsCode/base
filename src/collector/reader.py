@@ -10,13 +10,6 @@ class Reader:
         self.stopwords_eng = set(stopwords.words('english'))
 
     def preprocessing(self, texto):
-        """
-        Procesa el texto de un libro:
-        - Limpia caracteres especiales.
-        - Tokeniza el texto en palabras.
-        - Elimina stopwords y palabras no alfabéticas.
-        Retorna una lista de palabras procesadas.
-        """
         texto = re.sub(r'[^\w\s]', ' ', texto)  # Limpieza de caracteres especiales
         texto = texto.lower()
 
@@ -25,16 +18,11 @@ class Reader:
         return words
 
     def process_book_data(self, title, author, word_frequencies):
-        """
-        Crea un JSON estructurado con palabras, frecuencias y metadatos.
-        """
         return [
             {
                 "word": word,
-                "length": len(word),
-                "frequency": freq,
-                "book": title.strip(),
-                "author": author.strip()
+                "lenght": len(word),
+                "frequency": freq
             }
             for word, freq in word_frequencies.items()
         ]
