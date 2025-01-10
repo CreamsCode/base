@@ -7,8 +7,7 @@ from .reader import Reader
 
 
 class WebScraper:
-    def __init__(self, number):
-        self.n = number
+    def __init__(self):
         self.reader = Reader()
         logging.basicConfig(level=logging.INFO)
 

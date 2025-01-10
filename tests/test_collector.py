@@ -1,7 +1,7 @@
 from src.collector import WebScraper
 import json
 
-scraper = WebScraper(number=2)
+scraper = WebScraper()
 
 books_data = scraper.start()
 
