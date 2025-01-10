@@ -37,7 +37,6 @@ class WebScraper:
     def start(self):
         logging.info("Starting WebScraper...")
 
-        # Generar una URL aleatoria
         num_str = str(random.randint(1, 70000))
         url = f"https://www.gutenberg.org/cache/epub/{num_str}/pg{num_str}.txt"
 
@@ -47,18 +46,14 @@ class WebScraper:
 
             content = response.text
 
-            # Extraer metadatos
             title, author, language = self.extract_metadata(content)
 
             if language and language.lower() == "english":
-                # Extraer contenido
                 ebook_content = self.extract_content(content)
 
                 if ebook_content:
-                    # Procesar palabras utilizando Reader
                     processed_words = self.reader.preprocessing(ebook_content)
 
-                    # Calcular frecuencias y generar JSON estructurado
                     book_data = self.reader.process_book_data(title, author, Counter(processed_words))
 
                     word_info = {
