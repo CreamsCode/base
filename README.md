@@ -6,7 +6,7 @@
 - [X] Datalake en mongoDB para almacenar las palabras scrapeadas.
 - [X] Datamart que lea las palabras del datalake y que las mantenga en memoria.
 - [X] Aplicacion que construya el grafo con las palabras.
-- [ ] API de consultas para el grafo.
+- [X] API de consultas para el grafo.
 
 ## TO DO List - Secundario
 
