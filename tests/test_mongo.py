@@ -11,7 +11,7 @@ connection_manager.connect()
 data_ingestor = DataIngestor(connection_manager)
 
 # Procesar datos
-scraper = WebScraper(number=2)
+scraper = WebScraper(number=1)
 processed_words = scraper.start()
 
 # Ingestar datos
