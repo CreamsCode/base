@@ -136,30 +136,19 @@ def clusters():
             WITH id(n) AS cluster_id, n.word AS root_word, collect(DISTINCT m.word) AS connected_words
             RETURN cluster_id, [root_word] + connected_words AS cluster_nodes
         """
-
-        isolated_nodes_query = """
-            MATCH (n:Word)
-            WHERE NOT (n)-[]-()
-            RETURN n.word AS word
-        """
-
+        
         with neo4j_connection.driver.session() as session:
             cluster_results = session.run(cluster_query)
             clusters = [
                 {"component_id": record["cluster_id"], "nodes": record["cluster_nodes"]}
                 for record in cluster_results
+                if len(record["cluster_nodes"]) >= 3
             ]
-
-            isolated_results = session.run(isolated_nodes_query)
-            isolated_nodes = [record["word"] for record in isolated_results]
-
-        for isolated_node in isolated_nodes:
-            clusters.append({"component_id": None, "nodes": [isolated_node]})
-
+            
         if not clusters:
             return jsonify({"message": "No clusters found."}), 200
 
-        return jsonify({"clusters": clusters})
+        return jsonify({"clusters": clusters})          
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
